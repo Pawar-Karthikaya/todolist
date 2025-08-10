@@ -1,0 +1,290 @@
+{% extends 'tasks/base.html' %}
+
+{% block title %}Home - Todo App{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <h3 class="card-title">
+                    <i class="fas fa-user-circle me-2"></i>
+                    Welcome, {{ user.first_name|default:user.username }}!
+                </h3>
+                <p class="card-text">Let's get organized and boost your productivity today.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Analysis Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-tasks fa-2x text-primary mb-2"></i>
+                <h5 class="card-title">{{ total_tasks }}</h5>
+                <p class="card-text text-muted">Total Tasks</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                <h5 class="card-title">{{ completed_tasks }}</h5>
+                <p class="card-text text-muted">Completed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                <h5 class="card-title">{{ pending_tasks }}</h5>
+                <p class="card-text text-muted">Pending</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+                <h5 class="card-title">{{ high_priority_tasks }}</h5>
+                <p class="card-text text-muted">High Priority</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">Completion Rate</h6>
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: {{ completion_rate }}%" 
+                         aria-valuenow="{{ completion_rate }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        {{ completion_rate|floatformat:1 }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+                <a href="{% url 'add_task' %}" class="btn btn-primary me-2">
+                    <i class="fas fa-plus me-1"></i>Add New Task
+                </a>
+                <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-user-edit me-1"></i>Edit Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tasks Due Today -->
+{% if due_today %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-day me-2 text-warning"></i>Due Today
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for task in due_today %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card task-card priority-{{ task.priority }}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h6 class="card-title">{{ task.title }}</h6>
+                                    <span class="badge bg-{% if task.priority == 'high' %}danger{% elif task.priority == 'medium' %}warning{% else %}success{% endif %}">
+                                        {{ task.priority|title }}
+                                    </span>
+                                </div>
+                                <p class="card-text small text-muted">{{ task.description|truncatewords:10 }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>{{ task.due_date|time:"H:i" }}
+                                    </small>
+                                    <div>
+                                        <a href="{% url 'edit_task' task.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- All Tasks -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>All Tasks
+                </h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="filterTasks('all')">All</button>
+                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="filterTasks('pending')">Pending</button>
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="filterTasks('completed')">Completed</button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if tasks %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Title</th>
+                                    <th>Priority</th>
+                                    <th>Due Date</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in tasks %}
+                                <tr class="{% if task.is_completed %}completed-task{% endif %}" data-status="{% if task.is_completed %}completed{% else %}pending{% endif %}">
+                                    <td>
+                                        <button class="btn btn-sm {% if task.is_completed %}btn-success{% else %}btn-outline-secondary{% endif %}" 
+                                                onclick="toggleTask({{ task.id }})" 
+                                                data-task-id="{{ task.id }}">
+                                            <i class="fas {% if task.is_completed %}fa-check{% else %}fa-circle{% endif %}"></i>
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <strong>{{ task.title }}</strong>
+                                        {% if task.description %}
+                                            <br><small class="text-muted">{{ task.description|truncatewords:5 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if task.priority == 'high' %}danger{% elif task.priority == 'medium' %}warning{% else %}success{% endif %}">
+                                            {{ task.priority|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if task.due_date %}
+                                            <small>{{ task.due_date|date:"M d, Y" }}</small>
+                                        {% else %}
+                                            <small class="text-muted">No due date</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ task.created_at|date:"M d" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'edit_task' task.id %}" class="btn btn-outline-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'delete_task' task.id %}" class="btn btn-outline-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No tasks yet</h5>
+                        <p class="text-muted">Start by creating your first task!</p>
+                        <a href="{% url 'add_task' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Add Your First Task
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleTask(taskId) {
+    $.ajax({
+        url: `/task/${taskId}/toggle/`,
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        success: function(response) {
+            if (response.success) {
+                location.reload();
+            }
+        },
+        error: function() {
+            alert('Error updating task status');
+        }
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function filterTasks(status) {
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const taskStatus = row.getAttribute('data-status');
+        if (status === 'all' || taskStatus === status) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Add CSRF token to all AJAX requests
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+            xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+        }
+    }
+});
+</script>
+{% endblock %} 
